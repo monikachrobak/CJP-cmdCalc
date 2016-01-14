@@ -1,4 +1,4 @@
-package com.luxoft.cmdcalc;
+package com.luxoft.cmdcalc.model;
 
 public class CalculatorException extends Exception {
 
