@@ -114,7 +114,9 @@ public final class Calculator {
 		boolean hasOperandOccuredLastTime = true;
 		boolean isMinusNumber = false;
 		for (char c : line.toCharArray()) {
-			if ((c >= '0') & (c <= '9')) {
+			if (c == ' ') {
+				continue;
+			} else if ((c >= '0') & (c <= '9')) {
 				hasOperandOccuredLastTime = false;
 				numberBuilder.append(c);
 			} else if (c == '.') {

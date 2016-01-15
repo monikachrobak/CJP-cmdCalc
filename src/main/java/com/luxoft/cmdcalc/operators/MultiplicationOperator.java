@@ -1,8 +1,8 @@
 package com.luxoft.cmdcalc.operators;
 
 import java.util.Deque;
-import java.util.EmptyStackException;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import com.luxoft.cmdcalc.model.CalculatorException;
 
@@ -23,7 +23,7 @@ public class MultiplicationOperator extends MathOperator {
 		try {
 			operandA = stack.pop();
 			operandB = stack.pop();
-		} catch (EmptyStackException e) {
+		} catch (NoSuchElementException e) {
 			throw new CalculatorException("Error: Not enought operands");
 		}
 		stack.push(operandB * operandA);

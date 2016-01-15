@@ -1,8 +1,8 @@
 package com.luxoft.cmdcalc.operators;
 
 import java.util.Deque;
-import java.util.EmptyStackException;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import com.luxoft.cmdcalc.model.CalculatorException;
 
@@ -24,7 +24,7 @@ public class RightBracket extends Bracket {
 			while (!((operator = stack.pop()) instanceof LeftBracket)) {
 				outputList.add(operator);
 			}
-		} catch (EmptyStackException e) {
+		} catch (NoSuchElementException e) {
 			throw new CalculatorException("Error: Missing parentheses");
 		}
 		return false; // return hasOperandOccuredLastTime value
