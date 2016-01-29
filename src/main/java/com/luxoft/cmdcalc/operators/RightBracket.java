@@ -17,7 +17,7 @@ public class RightBracket extends Bracket {
 	}
 
 	@Override
-	public Boolean checkPrioritiesAndAddToStackNewOperator(Deque<Operator> stack, List<Object> outputList)
+	public Boolean addOperatorsFromStackToOutputListIfNeededAndAddToStackNewOperator(Deque<Operator> stack, List<Object> outputList)
 			throws CalculatorException {
 		try {
 			Operator operator;

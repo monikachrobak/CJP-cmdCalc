@@ -15,8 +15,7 @@ public class LeftBracket extends Bracket {
 	}
 	
 	@Override
-	public Boolean checkPrioritiesAndAddToStackNewOperator(Deque<Operator> stack, List<Object> outputList) {
-		// add new operator to the stack
+	public Boolean addOperatorsFromStackToOutputListIfNeededAndAddToStackNewOperator(Deque<Operator> stack, List<Object> outputList) {
 		stack.push(this);
 		return true; // return hasOperandOccuredLastTime value
 	}

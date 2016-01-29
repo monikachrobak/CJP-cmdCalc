@@ -49,24 +49,6 @@ public final class Calculator {
 	}
 
 	/**
-	 * Parse number from String to Double. If String object is null or empty,
-	 * the {@link CalculatorException} is thrown.
-	 * 
-	 * @param stringNumber
-	 * @return Double representation of a given parameter
-	 * @throws CalculatorException
-	 */
-	public static Double parseNumber(String stringNumber) throws CalculatorException {
-		Double number = null;
-		if (stringNumber.equals("") || stringNumber.equals(".")) {
-			throw new CalculatorException("Error: Invalid number format");
-		} else {
-			number = Double.valueOf(stringNumber);
-		}
-		return number;
-	}
-
-	/**
 	 * Converts given String with expression into numbers and operands and adds
 	 * them to the output list in correct order
 	 * 
@@ -86,75 +68,82 @@ public final class Calculator {
 
 		interpretGivenLine(line, numberBuilder, stack, outputList);
 
-		if (!numberBuilder.toString().equals("")) {
-			// if number was putted as last - have to parse it
-			Double number = parseNumber(numberBuilder.toString());
-			outputList.add(number);
-			// System.out.println(number);
-			// clearing StringBuilder content
-			numberBuilder.setLength(0);
-			numberBuilder.trimToSize();
-		}
-		if (!stack.isEmpty()) {
-			// after reading all numbers and operators stack can't contain any
-			// parantheses
-			if (stack.contains(operators.get("("))) {
-				throw new CalculatorException("Error: Missing parentheses");
-			}
-			// have to pop all elements from stack to outputList
-			outputList.addAll(stack);
-		}
+		ifNumberBuilderNotEmptyParseNumber(numberBuilder, outputList);
+
+		ifStackIsNotEmptyAddAllElementsToOutputList(stack, outputList);
+
 		return outputList;
 	}
 
 	private static void interpretGivenLine(String line, StringBuilder numberBuilder, Deque<Operator> stack,
 			List<Object> outputList) throws CalculatorException {
-		boolean isFloat = false;
+		Boolean isFloat = new Boolean(false);
 		// true because only number, '(', '-' or '.' can be first in a line
-		boolean hasOperandOccuredLastTime = true;
-		boolean isMinusNumber = false;
+		Boolean hasOperandOccuredLastTime = new Boolean(true);
+		Boolean isMinusNumber = new Boolean(false);
 		for (char c : line.toCharArray()) {
-			if (c == ' ') {
-				continue;
-			} else if ((c >= '0') & (c <= '9')) {
-				hasOperandOccuredLastTime = false;
-				numberBuilder.append(c);
-			} else if (c == '.') {
-				hasOperandOccuredLastTime = false;
-				if (!isFloat) {
-					numberBuilder.append(c);
-					isFloat = true;
-				} else {
-					throw new CalculatorException("Error: Double dot occurance");
-				}
-			} else if (c == '-' & hasOperandOccuredLastTime) {
-				if (hasOperandOccuredLastTime & !isMinusNumber) {
-					numberBuilder.append(c);
-					isMinusNumber = true;
-				} else {
-					throw new CalculatorException("Error: Too many minus operators");
-				}
-			} else {
+			if (operators.containsKey(String.valueOf(c))) {
 				isFloat = false;
-				if (!numberBuilder.toString().equals("")) {
-					Double number = parseNumber(numberBuilder.toString());
-					outputList.add(number);
-					// System.out.println(number);
-					// clearing StringBuilder content
-					numberBuilder.setLength(0);
-					numberBuilder.trimToSize();
-					isMinusNumber = false;
-				}
+				ifNumberBuilderNotEmptyParseNumber(numberBuilder, outputList);
+				isMinusNumber = false;
 				Operator operator = operators.get(String.valueOf(c));
 				if (operator != null) {
 					if ((operator instanceof MathOperator) & hasOperandOccuredLastTime) {
 						throw new CalculatorException("Error: Two operators next to each other");
 					}
-					hasOperandOccuredLastTime = operator.checkPrioritiesAndAddToStackNewOperator(stack, outputList);
+					hasOperandOccuredLastTime = operator
+							.addOperatorsFromStackToOutputListIfNeededAndAddToStackNewOperator(stack, outputList);
+				} else {
+					throw new CalculatorException("Error: Operator is not initialized");
+				}
+			} else {
+				if (c == ' ') {
+					continue;
+				} 
+				if ((c >= '0') & (c <= '9')) {
+					hasOperandOccuredLastTime = false;
+				} else if (c == '.') {
+					hasOperandOccuredLastTime = false;
+					if (!isFloat) {
+						isFloat = true;
+					} else {
+						throw new CalculatorException("Error: Double dot occurance");
+					}
+				} else if (c == '-' & hasOperandOccuredLastTime) {
+					if (hasOperandOccuredLastTime & !isMinusNumber) {
+						isMinusNumber = true;
+					} else {
+						throw new CalculatorException("Error: Too many minus operators");
+					}
 				} else {
 					throw new CalculatorException("Error: Letter or invalid operator");
 				}
+				numberBuilder.append(c);
 			}
+		}
+	}
+
+	private static void ifNumberBuilderNotEmptyParseNumber(StringBuilder numberBuilder, List<Object> outputList)
+			throws CalculatorException {
+		if (numberBuilder.length() != 0) {
+			try {
+				Double number = Double.valueOf(numberBuilder.toString());
+				outputList.add(number);
+				numberBuilder.setLength(0);
+				numberBuilder.trimToSize();
+			} catch (NumberFormatException exception) {
+				throw new CalculatorException(exception.getMessage());
+			}
+		}
+	}
+
+	private static void ifStackIsNotEmptyAddAllElementsToOutputList(Deque<Operator> stack, List<Object> outputList)
+			throws CalculatorException {
+		if (!stack.isEmpty()) {
+			if (stack.contains(operators.get("("))) {
+				throw new CalculatorException("Error: Missing parentheses");
+			}
+			outputList.addAll(stack);
 		}
 	}
 
@@ -176,27 +165,37 @@ public final class Calculator {
 			throw new CalculatorException("Error: Empty RPN list");
 		}
 		for (Object outputElement : rpnList) {
-			if (outputElement instanceof Double) {
-				stack.push((Double) outputElement);
-			} else if (outputElement instanceof Operator) {
-				if (outputElement instanceof Bracket) {
-					throw new CalculatorException("Error: Bracket in the RPN List");
-				}
-				if (outputElement != null) {
-					((MathOperator) outputElement).calculate(stack);
-				}
+			makeCalculationsBasedOnStackContent(stack, outputElement);
+		}
+		result = stack.pop();
+		validateResultAndWhatIsLeftOnStack(stack, result);
+		return result;
+	}
+
+	private static void makeCalculationsBasedOnStackContent(Deque<Double> stack, Object elementForCalculation)
+			throws CalculatorException {
+		if (elementForCalculation != null) {
+			if (elementForCalculation instanceof Double) {
+				stack.push((Double) elementForCalculation);
+			} else if (elementForCalculation instanceof Bracket) {
+				throw new CalculatorException("Error: Bracket in the RPN List");
+			} else if (elementForCalculation instanceof MathOperator) {
+				((MathOperator) elementForCalculation).calculate(stack);
 			} else {
 				throw new CalculatorException("Error: Invalid type of element in a list");
 			}
 		}
-		result = stack.pop();
+
+	}
+
+	private static void validateResultAndWhatIsLeftOnStack(Deque<Double> stack, Double result)
+			throws CalculatorException {
 		if (result == null) {
 			throw new CalculatorException("Error: No result obtained");
 		}
 		if (!stack.isEmpty()) {
 			throw new CalculatorException("Error: Invalid number of operators");
 		}
-		return result;
 	}
 
 	public static void main(String args[]) {
@@ -212,19 +211,9 @@ public final class Calculator {
 				if (line.equalsIgnoreCase("exit")) {
 					stopCondition = true;
 				} else {
+
 					List<Object> RPN = convertStringLineToRPN(line);
 
-					// check RPN output
-					// for (Object o : RPN) {
-					// if(o instanceof Operator) {
-					// System.out.print(((Operator) o).getSymbol() + " ");
-					// } else {
-					// System.out.print(o + " ");
-					// }
-					// }
-					// System.out.println();
-
-					// calculate result
 					System.out.println("Result: " + calculateRPNOutput(RPN));
 				}
 			} catch (IOException e) {

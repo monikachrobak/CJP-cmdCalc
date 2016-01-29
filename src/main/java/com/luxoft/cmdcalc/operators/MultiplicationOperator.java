@@ -1,7 +1,6 @@
 package com.luxoft.cmdcalc.operators;
 
 import java.util.Deque;
-import java.util.List;
 import java.util.NoSuchElementException;
 
 import com.luxoft.cmdcalc.model.CalculatorException;
@@ -27,17 +26,6 @@ public class MultiplicationOperator extends MathOperator {
 			throw new CalculatorException("Error: Not enought operands");
 		}
 		stack.push(operandB * operandA);
-	}
-	
-	@Override
-	public Boolean checkPrioritiesAndAddToStackNewOperator(Deque<Operator> stack, List<Object> outputList) {
-		// check if stack is empty or check priorities
-		while (!stack.isEmpty() && (this.getPriority() <= (stack.peek()).getPriority())) {
-			outputList.add(stack.pop());
-		}
-		// add new operator to the stack
-		stack.push(this);
-		return true; // return hasOperandOccuredLastTime value
 	}
 
 }
